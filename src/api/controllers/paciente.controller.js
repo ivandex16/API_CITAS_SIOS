@@ -1,0 +1,97 @@
+/* eslint-disable linebreak-style */
+/* eslint-disable consistent-return */
+const httpStatus = require("http-status");
+//const { pacienteService, PacienteService } = require("../services/paciente.service");
+const APIError = require("../errors/api-error");
+const { logger } = require("../../config/logger");
+const path = require("path");
+const { CrearPacienteDTO, ConsultarPacienteDTO } = require("../dtos/paciente");
+//const CrearPacienteDTO = require("../dtos/paciente/crearPaciente.dto");
+
+class PacienteController {
+  constructor(pacienteService) {
+    if (!pacienteService) {
+      console.log("pacienteService is required");
+      throw new Error("pacienteService is required");
+    }
+    this.pacienteService = pacienteService;
+  }
+
+
+  /********************************************
+   * @method consultarPaciente
+   * @author Desarrollador Ivan Cabeza
+   * @param {*} req 
+   * @param {*} res 
+   * @param {*} next 
+   * @returns 
+   ***********************************************/
+  async consultarPaciente(req, res, next) {
+    try {
+      const query = req.query;
+      const consultarPacienteDto =  ConsultarPacienteDTO.fromModel(query);
+      const response =
+        await this.pacienteService.consultarPorIdentificacionYtipoId(
+          consultarPacienteDto
+        );
+        
+        
+      return res.status(response.status).json(response);
+    } catch (error) {
+      logger.error(error.message);
+      return next(error);
+    }
+  }
+
+  /**
+   *
+   * @param {*} req
+   * @param {*} res
+   * @param {*} next
+   * @returns
+   */
+  async crearPaciente(req, res, next) {
+    try {
+      const body = req.body;
+      const crearPacienteDTO =  CrearPacienteDTO.fromModel(body);
+      const response = await this.pacienteService.createPaciente(
+        crearPacienteDTO
+      );
+      console.log("response[controller]", response);
+      return res.status(response.status).json(response);
+    } catch (error) {
+      logger.error(error.message);
+      return next(error);
+    }
+  }
+
+  async actualizarPaciente(req, res, next) {
+    try {
+      const { id } = req.params;
+      const body = req.body;
+      console.table({ id, body });
+      const response = await this.pacienteService.updatePaciente(id, body);
+      return res.status(response.status).json(response);
+    } catch (error) {
+      logger.error(error.message);
+      return next(error);
+    }
+  }
+
+
+  async consultarCitasPaciente(req, res, next) {
+    try {
+      const { idPaciente } = req.query;
+ 
+      const response = await this.pacienteService.consultarCitasPorPaciente(idPaciente);
+      console.log("citas", response);
+      return res.status(response.status).json(response);
+    } catch (error) {
+      logger.error(error.message);
+      return next(error);
+    }
+  }
+}
+
+module.exports = PacienteController;
+
