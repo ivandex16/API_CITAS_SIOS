@@ -16,14 +16,16 @@ const {
 } = require("../../utils/functionHelpers");
 const Paciente = require("../paciente.model");
 const { queryGetCitaByPaciente, buscarPacienteByIdentificacionYTipoId } = require("../querys/paciente.query");
+const BaseMethod = require("./base.method");
 
 //const logger = buildLogger(path.basename(__filename));
 
-class PacienteMethod {
+class PacienteMethod extends BaseMethod {
   constructor(
     sql //* dependencia de clase de sequalize
   ) {
-    this.sql = sql;
+    super(sql); // Llama al constructor de la clase base primero
+    
   }
 
   /*******************************************************************************************
@@ -146,7 +148,7 @@ class PacienteMethod {
     @img_Huella='Load',
     @Foto=:foto`;
     const replacements = { ...pacienteData };
-    const newPaciente = await this.sql.executeSql(
+    const newPaciente = await this.sql.executeSql_(
       storProcedurePacientesInsertar,
       replacements
     );

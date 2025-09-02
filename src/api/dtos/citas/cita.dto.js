@@ -23,6 +23,8 @@ class CitaDTO {
         this.bProgramaPyMS = params.bProgramaPyMS ? 1 : 0;
         this.usuario = params.usuario || "";
         this.idPlan = params.idPlan || "";
+        this.idTurno = typeof params.idTurno === "string" ? parseInt(params.idTurno, 10) || 0 : params.idTurno || 0;
+
     }
 
     static fromModel(params) {
@@ -47,6 +49,7 @@ class CitaDTO {
             usuario : params.usuario || "",
             idProgramaPyMS : params.idProgramaPyMS === "" || params.idProgramaPyMS === null || params.idProgramaPyMS === 0 ? null : params.idProgramaPyMS,
             idPlan : params.idPlan,
+            idTurno : params.idTurno,
             //bProgramaPyMS : params.bProgramaPyMS,
             // ...programaPyMS
 

@@ -10,22 +10,22 @@ class EspecialidadService {
   async obtenerEspecialidades() {
     const paConsultasCitas = `exec paConsultasCitas @Consulta=N'EspPrest',@Dato=N'',@Extra2=default,@Equipo=default`;
     try {
-      const response = await this.especialidadRepository.executeSql(
+      const response = await this.especialidadRepository.executeSql_(
         paConsultasCitas
       );
 
-      console.log("response", response);
-      if (response.status !== httpStatus.OK) {
+     
+      if (response.error) {
         throw new APIError({
-          status: response.status,
+          status: httpStatus.INTERNAL_SERVER_ERROR,
           message: response.message,
         });
       }
-      return response;
+      return {  status:httpStatus.OK, datos: response.datos  };
     } catch (error) {
       logger.error(error.message);
       throw new APIError({
-        status: error.status || httpStatus.INTERNAL_SERVER_ERROR,
+        status: httpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
       });
     }
@@ -34,20 +34,20 @@ class EspecialidadService {
   async obtenerPrestadoresPorEspecialidad(id) {
     const paConsultasCitas = `exec paConsultasCitas @Consulta=N'Prestadores',@Dato=N'${id}',@Extra2=default,@Equipo=default,@sTipoConsulta=N'Valor=%;'`;
     try {
-      const response = await this.especialidadRepository.executeSql(
+      const response = await this.especialidadRepository.executeSql_(
         paConsultasCitas
       );
-      if (response.status !== httpStatus.OK) {
+      if (response.error) {
         throw new APIError({
-          status: response.status,
+          status: httpStatus.INTERNAL_SERVER_ERROR,
           message: response.message,
         });
       }
-      return response;
+      return {  status:httpStatus.OK, datos: response.datos  };
     } catch (error) {
       logger.error(error.message);
       throw new APIError({
-        status: error.status || httpStatus.INTERNAL_SERVER_ERROR,
+        status:  httpStatus.INTERNAL_SERVER_ERROR,
         message: error.message,
       });
     }

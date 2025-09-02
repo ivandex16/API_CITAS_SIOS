@@ -38,6 +38,27 @@ class Sql {
     }
   }
 
+   async executeSql_(query, replacements) {
+    try {
+      const result = await sequelize.query(query, {
+        replacements: replacements,
+        type: sequelize.QueryTypes.SELECT,
+      });
+
+      console.log("resulProce", result);
+      return {datos: result, error : false ,}
+
+    
+    } catch (error) {
+      this.logger.error(error.message);
+      console.log("errorexecuteQueryString", error.status);
+
+      const sqlError = error.original || error.parent || error;
+      return {datos:null, error : true , message: sqlError.message, code: sqlError.number || error.status || httpStatus.INTERNAL_SERVER_ERROR, datos: [], metadata: {} }
+    
+    }
+  }
+
   /******************************************************************
    * @description funcion para realizar una consulta sql ya preparada
    * @param {string} consulta

@@ -124,6 +124,47 @@ function omitProperties(objeto, propiedades) {
 }
 
 
+function toIsoDateOnlyZ(value) {
+  if (!value) return "";
+  const fecha = new Date(value);
+  if (isNaN(fecha.getTime())) return "";
+  // Devuelve solo la fecha en formato ISO con Z y hora 00:00:00
+  return new Date(Date.UTC(
+    fecha.getUTCFullYear(),
+    fecha.getUTCMonth(),
+    fecha.getUTCDate(),
+    0, 0, 0, 0
+  )).toISOString();
+}
+
+
+/**
+ * Limpia espacios adelante y atrás en todas las propiedades tipo string
+ * dentro de un objeto agrupado por fecha.
+ * @param {Object} datos - Objeto con arrays por fecha
+ * @returns {Object} - Objeto limpio
+ */
+function limpiarEspacios(datos) {
+  const resultado = {};
+
+  for (const fecha in datos) {
+    resultado[fecha] = datos[fecha].map((registro) => {
+      const limpio = {};
+
+      for (const clave in registro) {
+        const valor = registro[clave];
+
+        // Si es string, aplicar trim
+        limpio[clave] = typeof valor === 'string' ? valor.trim() : valor;
+      }
+
+      return limpio;
+    });
+  }
+
+  return resultado;
+}
+
 
 module.exports = {
   assingNameToObjectProp,
@@ -135,4 +176,6 @@ module.exports = {
   getCallerInfo,
   validarPropiedadesObjeto,
   omitProperties,
+  toIsoDateOnlyZ,
+  limpiarEspacios
 };

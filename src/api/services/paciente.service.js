@@ -38,7 +38,7 @@ class PacienteService {
   async consultarPorIdentificacionYtipoId(consultarPacienteDto) {
     try {
       //const datosPaciente = await this.pacienteReposistory.consultarPaciente(consultarPacienteDto);
-      const response  = await this.pacienteReposistory.executeSql(queryPacienteByIdentificacionYTipoId,consultarPacienteDto)
+      const response  = await this.pacienteReposistory.executeSql_(queryPacienteByIdentificacionYTipoId,consultarPacienteDto)
      
 
       if (!response.datos || response.error) {
@@ -48,11 +48,20 @@ class PacienteService {
           isPublic: true,
         });
       }
-      
+      const [datos] = response.datos
+
+      if (!datos) {
+        throw new APIError({
+          message: pacienteError.message,
+          status: httpStatus.NOT_FOUND,
+          isPublic: true,
+        });
+      }
+
       return {
         status: responsePacienteFound.status,
         message: responsePacienteFound.message,
-        datos: response.datos,
+        datos,
       };
     } catch (error) {
       logger.error(error.message, getCallerInfo());
@@ -166,8 +175,9 @@ class PacienteService {
       //const buscarPacienteProcedure = `exec pa_OperacionesPacientes @OPERACION=N'BUSCAR',@Identificacion=:identificacion,@tipoId=N''`
       
       
-      const buscarPaciente = await this.pacienteReposistory.executeSql(procedureBuscarPaciente,replacements)
+      const buscarPaciente = await this.pacienteReposistory.executeSql_(procedureBuscarPaciente,replacements)
      
+      const [datos] = buscarPaciente.datos
       
       if(buscarPaciente.datos && buscarPaciente.error !== true) {
         return {
@@ -175,7 +185,7 @@ class PacienteService {
           message: `El paciente ya existe en el sistema,por favor verifique 
           si existe mas de uno con la misma identificación por 
           favor consulte a la entidad pertinente que lo registro.`,
-          datos:buscarPaciente.datos,
+          datos,
         }
 
      
@@ -511,10 +521,11 @@ class PacienteService {
     try {
 
       //comprobamos si existe el paciente
-      const existePaciente = await this.pacienteReposistory.executeSql(queryBuscarPacienteById, replacements)
-
-      console.log('existePaciente', existePaciente.datos.Existe)
-      if (existePaciente.datos.Existe === 0) {
+      const existePaciente = await this.pacienteReposistory.executeSql_(queryBuscarPacienteById, replacements)
+      const [paciente] = existePaciente.datos
+      
+     
+      if (paciente.Existe === 0) {
         throw new APIError({
           message: "El paciente no existe",
           status: httpStatus.NOT_FOUND,
@@ -522,7 +533,15 @@ class PacienteService {
       }
 
 
-      const response = await this.pacienteReposistory.executeSql(queryGetCitaByPaciente, replacements);
+      const response = await this.pacienteReposistory.executeSql_(queryGetCitaByPaciente, replacements);
+      
+      if (response.datos.length === 0) {
+         throw new APIError({
+          message: "No se encontraron citas para el paciente.",
+          status: httpStatus.NOT_FOUND,
+        });
+      }
+      
       if (!response.datos && response.error === false) {
         throw new APIError({
           message: "No se encontraron citas para el paciente.",

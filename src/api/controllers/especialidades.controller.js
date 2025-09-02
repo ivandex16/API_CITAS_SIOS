@@ -1,3 +1,4 @@
+const httpStatus = require("http-status");
 const { buildLogger , logger} = require("../../config/logger");
 const APIError = require("../errors/api-error");
 
@@ -8,20 +9,31 @@ class EspecialidadController {
   }
 
   async obtenerEspecialidades(req, res, next) {
+   
     try {
-      const especialidades =
-        await this.especialidadService.obtenerEspecialidades();
-      return res.status(especialidades.status).json(especialidades);
+      const response = await this.especialidadService.obtenerEspecialidades();
+
+      
+      if (response.error) {
+        throw new APIError({
+          status: httpStatus[500],
+          message: response.message,
+        });
+      }
+
+      res.status(response.status).json(response);
+    
+
     } catch (error) {
-      this.#logger.error(error.message);
-      return next(
-        new APIError({ status: error.status, message: error.message })
-      );
+      logger.error(error.message);
+      throw new APIError({
+        status: error.status || httpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+      });
     }
   }
-
-
-  async obtenerPrestadoresPorEspecialidad(req, res, next) {
+  
+ async obtenerPrestadoresPorEspecialidad(req, res, next) {
     try {
       console.log("req.params", req.params);
       const { codEspecialidad } = req.params;

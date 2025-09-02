@@ -15,7 +15,7 @@ class TurnosController {
       return res.status(turnos.status).json(turnos);
     } catch (error) {
       next(error);
-      logger.error(error.message);
+      
     }
   }
 }

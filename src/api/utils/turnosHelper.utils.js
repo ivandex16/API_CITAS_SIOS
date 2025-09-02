@@ -110,6 +110,9 @@ console.log('citasAsignadas', citasAsignadas)
   return resultado;
 }
 
+
+
+
 module.exports = {
   calcularTurnosPorBloques,
 };

@@ -12,16 +12,18 @@ const {
   citaSucces,
   citaCancelada,
 } = require("../../../config/messageResponses");
-const CitaModel = require("../citas.modelo")
+const CitaModel = require("../citas.modelo");
+const BaseMethod = require("./base.method");
 
 //const logger = buildLogger(module.filename);
 
-class CitasMethods {
+class CitasMethods extends BaseMethod {
 
   constructor(
     sql //* dependencia de clase de sequalize
   ) {
-    this.sql = sql;
+    super(sql); // Llama al constructor de la clase base primero
+    
   }
   
 

@@ -50,6 +50,13 @@ class BaseMethod {
     
      }
 
+
+     async  executeSql_(procedure, replacements) {
+        const response  = await this.#sql.executeSql_(procedure, {...replacements})
+        return response;
+    
+     }
+
     
 }
 

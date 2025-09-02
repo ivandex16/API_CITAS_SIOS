@@ -15,11 +15,13 @@ const APIError = require("../errors/api-error");
 const { assingNameToObjectProp } = require("../utils/functionHelpers");
 const CitaDTO = require("../dtos/citas/cita.dto");
 const { procedureAgendarCita } = require("../models/querys/citas.query");
+const TurnosDTO = require("../dtos/turnos/turnos.dto");
 
 class CitasService {
-  constructor(citaMethods, programaPyMSService) {
+  constructor(citaMethods, programaPyMSService, turnosServices) {
     this.citaRepository = citaMethods;
     this.programaPyMSService = programaPyMSService;
+    this.turnosServices = turnosServices;
   }
   /*********************************************
    * @public
@@ -63,7 +65,29 @@ class CitasService {
        }
 
       //obtiene el turno del prestador
-      const turno = await this.#obtenerTurnoPrestadores(citaDto);
+      //const turno = await this.#obtenerTurnoPrestadores(citaDto);
+
+      const turnosDto =  TurnosDTO.fromSecondaryModel({
+        idPrestador: citaDto.prestador,
+        codEspecialidad: citaDto.especialidad,
+        sede: citaDto.sede,
+        fechaInicial: new Date(citaDto.fechaAsignada).toISOString(),
+        fechaFinal: new Date(citaDto.fechaAsignada).toISOString(),
+      })
+
+      const isTurnoDisponible = await this.turnosServices.verificarTurnoDisponible(
+        turnosDto,
+        citaDto.idTurno
+      );
+
+      if (!isTurnoDisponible) {
+         throw new APIError({
+          message: "No se encontraron turnos disponibles",
+          status: httpStatus.NOT_FOUND,
+        });
+      }
+
+      
 
 
       const replacements = { ...citaDto, ...programaPyMS };
@@ -73,23 +97,23 @@ class CitasService {
       @FechaSolicitada=:fechaSolicitada,@FechaAsignada=:fechaAsignada,
       @Prestador=:prestador,@Especialidad=:especialidad,@Consultorio=:consultorio,
       @Adm=:idPlan,@Autorizacion=N'',@TipoConsulta=:tipoConsulta,@Ciclo=N'1',
-      @Cantidad=N'1',@Paciente=:Ipaciente,@Observacion=N'',@IdTurno=${turno.Id},@idConsultorio=:idConsultorio,
+      @Cantidad=N'1',@Paciente=:Ipaciente,@Observacion=N'',@IdTurno=${citaDto.idTurno},@idConsultorio=:idConsultorio,
       @xmlProcedimientos=N'<Procedimientos><row IdProcedimiento="${citaDto.idServicio}"  IdProgramaPyMS="${programaPyMS.idProgramaPyMS}" />
       </Procedimientos>',@FechaDeseada=:fechaDeseada,@bProgramaPyMS=:bProgramaPyMS,@sAsignadaFecha=N'FA001',@sUsuarioRegistro=:usuario`;
 
 
      
-      const response = await this.citaRepository.executeSql(
-         procedureAgendarCita(turno, citaDto, programaPyMS),
+      const response = await this.citaRepository.executeSql_(
+         procedureAgendarCita( citaDto, programaPyMS),
         replacements
       );
 
 
-        const citaAgendada = assingNameToObjectProp(response.datos, "idCita")
+       // const citaAgendada = assingNameToObjectProp(response.datos, "idCita")
       
-      // const citaAgendada = response.datos.map((item) =>
-      //   assingNameToObjectProp(item, "idCita")
-      // );
+      const citaAgendada = response.datos.map((item) =>
+        assingNameToObjectProp(item, "idCita")
+      );
 
       if (response.error && response.code == 50000) {
         throw new APIError({
@@ -97,6 +121,15 @@ class CitasService {
           message: response.message,
         });
       }
+
+      if (response.error ) {
+        throw new APIError({
+          status: httpStatus.INTERNAL_SERVER_ERROR,
+          message: response.message,
+        });
+      }
+
+
       return {
         status: httpStatus.OK,
         message: citaSucces.message,
@@ -143,11 +176,22 @@ class CitasService {
         idCita: cancelarCitaDto.idCita,
       };
 
-      const cita = await this.citaRepository.executeSql(
+      const responCitaIsCancel = await this.citaRepository.executeSql_(
         consultaCita,
         replacementsConsultaCita
       );
-      if (cita.datos.Cancelada) {
+
+      const [citaData] = responCitaIsCancel.datos;
+
+      if (!citaData) {
+        throw new APIError({
+          message: "No se encontro la cita a cancelar",
+          status: httpStatus.NOT_FOUND,
+        });
+      }
+
+
+      if (citaData.Cancelada) {
         throw new APIError({
           message: "La cita ya ha sido cancelada.",
           status: httpStatus.CONFLICT,
@@ -161,7 +205,7 @@ class CitasService {
                           @MedioCancelacion=:medioCancelacion`;
 
       const replacements = cancelarCitaDto;
-      const response = await this.citaRepository.executeSql(
+      const response = await this.citaRepository.executeSql_(
         cancelarCitaProcedure,
         replacements
       );
@@ -220,13 +264,13 @@ class CitasService {
         replacements
       );
 
-      if (turnosPrestador.status === 500) {
+      if (turnosPrestador.error) {
         throw new APIError({
           status: turnosPrestador.status,
           message: turnosPrestador.message,
         });
       }
-      if (!turnosPrestador)
+      if (!turnosPrestador.datos)
         throw new Error("Hubo en error en la busqueda de turnos");
       if (turnosPrestador.datos.length === 0) {
         throw new APIError({
@@ -274,7 +318,7 @@ class CitasService {
       logger.error(error.message);
       throw new APIError({
         message: error.message,
-        status: error.status || httpStatus.INTERNAL_SERVER_ERROR,
+        status:  httpStatus.INTERNAL_SERVER_ERROR,
         isPublic: true,
       });
     }
